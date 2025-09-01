@@ -5,7 +5,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { colors, commonStyles } from '../../../styles/commonStyles';
 import Button from '../../../components/Button';
 import { useAppState } from '../../../store/AppStateContext';
-import SettingSheet from '../../../components/SettingSheet';
+import SettingsSheet from '../../../components/SettingsSheet';
 
 export default function ProfileScreen() {
   const { role, accounts, currentAccount, updateAccount, setSchedule } = useAppState();
