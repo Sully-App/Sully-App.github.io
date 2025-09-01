@@ -1,4 +1,3 @@
-
 {
   "expo": {
     "name": "Sullivan Connect",
@@ -43,6 +42,5 @@
     "extra": {
       "router": {}
     }
-  },
-  "scheme": "Sullivan Connect"
+  }
 }
