@@ -1,0 +1,23 @@
+# Environment variables
+.env
+
+# Node modules
+node_modules/
+
+# Build output (Expo web/ios/android)
+dist/
+build/
+web-build/
+android/
+ios/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# OS/Editor files
+.vscode/
+.idea/
