@@ -3,9 +3,9 @@ import { useMemo, useState } from 'react';
 import { View, Text, ScrollView, TextInput, StyleSheet, Image, TouchableOpacity, Platform, KeyboardAvoidingView, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { colors, commonStyles } from '../../../styles/commonStyles';
-import Button from '../../../components/Button';
-import { useAppState } from '../../../store/AppStateContext';
-import SettingsSheet from '../../../components/SettingsSheet';
+import Button from '../../components/Button';
+import { useAppState } from '../../store/AppStateContext';
+import SettingsSheet from '../../components/SettingsSheet';
 
 export default function ProfileScreen() {
   const { role, accounts, currentAccount, updateAccount, setSchedule } = useAppState();
