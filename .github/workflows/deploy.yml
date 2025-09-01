@@ -21,7 +21,7 @@ jobs:
         run: npm install
 
       - name: Build web app
-        run: npx expo export:web # use npm run build for React
+        run: npx expo export # use npm run build for React
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
