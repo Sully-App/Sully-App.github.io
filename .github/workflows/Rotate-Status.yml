@@ -1,0 +1,115 @@
+name: Rotate GitHub Status Hourly
+on:
+  # This schedule runs at the start of every hour (minute 0).
+  schedule:
+    - cron: '0 * * * *'
+jobs:
+  update-status:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Choose a status from the list
+        id: set_status
+        run: |
+          # Define your list of statuses here, tailored to a tire and auto shop with inventory and employee management app features.
+          STATUS_OPTIONS=(
+            ":wheel: Swapping Out Tires"
+            ":wrench: Performing an Alignment"
+            ":toolbox: Tackling Mechanic Work"
+            ":zap: Diagnosing Electrical Issues"
+            ":oil_drum: Completing General Service"
+            ":white_check_mark: Conducting Maine State Inspections"
+            ":clipboard: Generating Vehicle Health Reports"
+            ":mag: Running Visual Vehicle Pre-Inspections"
+            ":car: Balancing Tire Rotations"
+            ":gear: Inspecting Engine Components"
+            ":battery: Testing Electrical Systems"
+            ":pencil: Logging Service Records"
+            ":spark_plug: Replacing Spark Plugs"
+            ":brake: Checking Brake Systems"
+            ":package: Ordering New Parts"
+            ":file_folder: Updating Maintenance Logs"
+            ":shield: Ensuring Vehicle Safety"
+            ":globe_with_meridians: Syncing Diagnostic Tools"
+            ":screwdriver: Tightening Loose Bolts"
+            ":bulb: Troubleshooting Dashboard Lights"
+            ":steering_wheel: Verifying Steering Alignment"
+            ":house: Closing Shop for the Day"
+            # Added oil changes
+            ":droplet: Performing Oil Change"
+            ":oil_drum: Draining Old Oil"
+            ":filter: Replacing Oil Filter"
+            ":wrench: Checking Oil Levels"
+            ":car: Topping Up Engine Oil"
+            ":toolbox: Inspecting During Oil Service"
+            ":clipboard: Recording Oil Change Details"
+            ":shield: Ensuring Proper Lubrication"
+            ":gear: Recommending Oil Type"
+            ":mag: Verifying Oil System Health"
+            # 10 for stocking shelves (inventory addition)
+            ":package: Stocking New Tires on Shelves"
+            ":truck: Receiving Inventory Shipment"
+            ":shelves: Organizing Parts in Storage"
+            ":box: Unpacking Brake Pads"
+            ":wrench: Adding Tools to Inventory"
+            ":battery: Stocking Car Batteries"
+            ":oil_drum: Replenishing Oil Supplies"
+            ":gear: Placing Engine Parts on Racks"
+            ":spark_plug: Stocking Spark Plugs"
+            ":filter: Adding Air Filters to Stock"
+            # 10 for checking inventory
+            ":clipboard: Checking Tire Inventory Levels"
+            ":mag: Scanning Parts Stock"
+            ":bar_chart: Reviewing Inventory Reports"
+            ":package: Verifying Shipment Counts"
+            ":wrench: Inspecting Tool Availability"
+            ":battery: Counting Battery Stock"
+            ":oil_drum: Monitoring Oil Reserves"
+            ":gear: Auditing Engine Components"
+            ":spark_plug: Checking Spark Plug Quantities"
+            ":filter: Assessing Filter Inventory"
+            # 10 for employee management (lunch times, shift differences, etc.)
+            ":clock: Calculating Shift Hours"
+            ":sandwich: Scheduling Lunch Breaks"
+            ":calendar: Planning Employee Rotas"
+            ":bar_chart: Analyzing Shift Differences"
+            ":people: Assigning Daily Tasks"
+            ":clock: Tracking Overtime Hours"
+            ":coffee: Organizing Break Times"
+            ":pencil: Updating Employee Schedules"
+            ":shield: Ensuring Shift Coverage"
+            ":globe_with_meridians: Syncing Time Tracking Data"
+          )
+         
+          # Get the current hour in UTC (0-23) and use it as an index.
+          # The modulo operator ensures the index wraps around to the beginning of the array.
+          CURRENT_HOUR=$(date -u +%H)
+          STATUS_INDEX=$((CURRENT_HOUR % ${#STATUS_OPTIONS[@]}))
+         
+          SELECTED_STATUS="${STATUS_OPTIONS[$STATUS_INDEX]}"
+         
+          echo "selected_status=${SELECTED_STATUS}" >> $GITHUB_OUTPUT
+      - name: Update GitHub User Status
+        env:
+          GITHUB_TOKEN: ${{ secrets.STATUS_TOKEN }}
+          STATUS: ${{ steps.set_status.outputs.selected_status }}
+        run: |
+          # The 'gh' command-line tool is pre-installed on GitHub Actions runners.
+          # We use it to call the GitHub GraphQL API to update the user's status.
+         
+          # Extract emoji and message from the selected status
+          EMOJI=$(echo "$STATUS" | awk '{print $1}')
+          MESSAGE=$(echo "$STATUS" | awk '{$1=""; print $0}')
+          gh api graphql -f query='
+            mutation ($emoji: String, $message: String) {
+              changeUserStatus(input: {
+                emoji: $emoji,
+                message: $message,
+                clientMutationId: "rotate-status-action"
+              }) {
+                status {
+                  message
+                  emoji
+                }
+              }
+            }
+          ' -F emoji="$EMOJI" -F message="$MESSAGE"
