@@ -55,7 +55,7 @@ jobs:
 
       # 6️⃣ Export web build
       - name: Export Expo Web
-        run: npx expo export --platform web --dev false
+        run: npm run build:web
         env:
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
