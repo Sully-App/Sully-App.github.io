@@ -1,0 +1,51 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      # Preflight check to avoid case/path issues
+      - name: Check for SettingsSheet.tsx
+        run: |
+          echo "Checking components folder..."
+          ls -R ./components || true
+          if [ ! -f ./components/SettingsSheet.tsx ]; then
+            echo "❌ ERROR: components/SettingsSheet.tsx not found. Check casing/path."
+            exit 1
+          fi
+
+      - name: Build Expo Web
+        run: npx expo export --platform web
+
+      - name: Deploy to docs folder
+        run: |
+          rm -rf docs
+          mkdir -p docs
+          cp -r dist/* docs/
+          # GitHub Pages SPA fix
+          cp docs/index.html docs/404.html
+
+      - name: Commit and push changes
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add docs
+          git commit -m "Deploy web build to docs [skip ci]" || echo "No changes to commit"
+          git push
