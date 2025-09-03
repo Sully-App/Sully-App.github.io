@@ -32,7 +32,7 @@ jobs:
           fi
 
       - name: Build Expo Web
-        run: npx expo export --platform web
+        run: npx expo export:web --public-url ./
 
       - name: Deploy to docs folder
         run: |
