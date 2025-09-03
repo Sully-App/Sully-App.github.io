@@ -10,18 +10,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Checkout repo
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 2️⃣ Setup Node
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
+      # 3️⃣ Install dependencies
       - name: Install dependencies
         run: npm install
 
-      # Preflight check to avoid case/path issues
+      # 4️⃣ Preflight: ensure SettingsSheet exists
       - name: Check for SettingsSheet.tsx
         run: |
           echo "Checking components folder..."
@@ -31,17 +34,34 @@ jobs:
             exit 1
           fi
 
+      # 5️⃣ Build Expo Web
       - name: Build Expo Web
-        run: npx expo export:web --public-url ./
+        run: npx expo export:web
 
-      - name: Deploy to docs folder
+      # 6️⃣ Clean old docs folder & stale web assets
+      - name: Clean old docs folder
         run: |
+          echo "Cleaning old docs folder..."
           rm -rf docs
-          mkdir -p docs
-          cp -r dist/* docs/
-          # GitHub Pages SPA fix
-          cp docs/index.html docs/404.html
+          rm -rf web-export # remove any leftover from previous builds
 
+      # 7️⃣ Copy new build to docs
+      - name: Copy build to docs
+        run: |
+          mkdir -p docs
+          cp -r web-export/* docs/
+
+      # 8️⃣ Fix absolute paths to relative for GitHub Pages
+      - name: Fix paths for GitHub Pages
+        run: |
+          sed -i 's|href="/|href="./|g' docs/index.html
+          sed -i 's|src="/|src="./|g' docs/index.html
+
+      # 9️⃣ SPA support: copy index.html to 404.html
+      - name: GitHub Pages SPA fix
+        run: cp docs/index.html docs/404.html
+
+      # 🔟 Commit and push
       - name: Commit and push changes
         run: |
           git config user.name github-actions
