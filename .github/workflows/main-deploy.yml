@@ -11,22 +11,18 @@ jobs:
 
     steps:
       # 1️⃣ Checkout repo
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       # 2️⃣ Setup Node
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
 
       # 3️⃣ Install dependencies
-      - name: Install dependencies
-        run: npm install
+      - run: npm install
 
       # 4️⃣ Preflight: ensure SettingsSheet exists
-      - name: Check for SettingsSheet.tsx
-        run: |
+      - run: |
           echo "Checking components folder..."
           ls -R ./components || true
           if [ ! -f ./components/SettingsSheet.tsx ]; then
@@ -34,36 +30,30 @@ jobs:
             exit 1
           fi
 
-      # 5️⃣ Build Expo Web
+      # 5️⃣ Build web
       - name: Build Expo Web
-        run: npx expo export
+        run: npx expo build:web
 
-      # 6️⃣ Clean old docs folder
-      - name: Clean old docs folder
-        run: |
-          echo "Cleaning old docs folder..."
+      # 6️⃣ Clean old docs
+      - run: |
           rm -rf docs
-          rm -rf _expo/web # remove any leftover from previous builds
+          rm -rf _expo/web || true
 
-      # 7️⃣ Copy new build to docs
-      - name: Copy build to docs
-        run: |
+      # 7️⃣ Copy web build to docs
+      - run: |
           mkdir -p docs
-          cp -r _expo/static/* docs/
+          cp -r web-build/* docs/
 
-      # 8️⃣ Fix absolute paths for GitHub Pages
-      - name: Fix paths for GitHub Pages
-        run: |
+      # 8️⃣ Fix paths for GitHub Pages
+      - run: |
           sed -i 's|href="/|href="./|g' docs/index.html
           sed -i 's|src="/|src="./|g' docs/index.html
 
-      # 9️⃣ SPA support: copy index.html to 404.html
-      - name: GitHub Pages SPA fix
-        run: cp docs/index.html docs/404.html
+      # 9️⃣ SPA support
+      - run: cp docs/index.html docs/404.html
 
-      # 🔟 Commit and push
-      - name: Commit and push changes
-        run: |
+      # 🔟 Commit & push
+      - run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
           git add docs
