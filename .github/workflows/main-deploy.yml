@@ -6,16 +6,16 @@ on:
       - main
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout repository
+      # 1️⃣ Checkout repo
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Setup Node.js
-      - name: Setup Node.js
+      # 2️⃣ Setup Node
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -24,33 +24,35 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      # 4️⃣ Preflight: check SettingsSheet.tsx
+      # 4️⃣ Preflight: ensure SettingsSheet exists
       - name: Check for SettingsSheet.tsx
         run: |
           echo "Checking components folder..."
           ls -R ./components || true
           if [ ! -f ./components/SettingsSheet.tsx ]; then
-            echo "❌ ERROR: components/SettingsSheet.tsx not found."
+            echo "❌ ERROR: components/SettingsSheet.tsx not found. Check casing/path."
             exit 1
           fi
 
-      # 5️⃣ Build Expo for all platforms
-      - name: Build Expo (iOS, Android, Web)
+      # 5️⃣ Export all platforms (iOS, Android, Web)
+      - name: Export Expo
         run: npx expo export
 
-      # 6️⃣ Clean old docs folder
-      - name: Clean old docs folder
-        run: rm -rf docs
-
-      # 7️⃣ Ensure web build exists
-      - name: Check web build folder
+      # 6️⃣ Preflight: check that web build exists
+      - name: Check web build exists
         run: |
           if [ ! -d "_expo/web" ]; then
             echo "❌ ERROR: _expo/web folder not found. Export may have failed."
-            echo "Contents of _expo folder:"
+            echo "Contents of _expo (if any):"
             ls -R _expo || true
             exit 1
           fi
+
+      # 7️⃣ Clean old docs folder
+      - name: Clean old docs folder
+        run: |
+          rm -rf docs
+          rm -rf _expo/web || true
 
       # 8️⃣ Copy web build to docs
       - name: Copy web build to docs
@@ -58,17 +60,17 @@ jobs:
           mkdir -p docs
           cp -r _expo/web/* docs/
 
-      # 9️⃣ Fix absolute paths for GitHub Pages
+      # 9️⃣ Fix absolute paths to relative for GitHub Pages
       - name: Fix paths for GitHub Pages
         run: |
           sed -i 's|href="/|href="./|g' docs/index.html
           sed -i 's|src="/|src="./|g' docs/index.html
 
       # 🔟 SPA support: copy index.html to 404.html
-      - name: SPA support for GitHub Pages
+      - name: GitHub Pages SPA fix
         run: cp docs/index.html docs/404.html
 
-      # 1️⃣1️⃣ Commit and push changes
+      # 1️⃣1️⃣ Commit & push
       - name: Commit and push changes
         run: |
           git config user.name github-actions
