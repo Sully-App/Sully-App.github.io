@@ -38,7 +38,7 @@ jobs:
       - name: Build Expo Web
         run: npx expo export
 
-      # 6️⃣ Clean old docs folder & stale web assets
+      # 6️⃣ Clean old docs folder
       - name: Clean old docs folder
         run: |
           echo "Cleaning old docs folder..."
@@ -49,9 +49,9 @@ jobs:
       - name: Copy build to docs
         run: |
           mkdir -p docs
-          cp -r _expo/web/* docs/
+          cp -r _expo/static/* docs/
 
-      # 8️⃣ Fix absolute paths to relative for GitHub Pages
+      # 8️⃣ Fix absolute paths for GitHub Pages
       - name: Fix paths for GitHub Pages
         run: |
           sed -i 's|href="/|href="./|g' docs/index.html
