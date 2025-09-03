@@ -36,20 +36,20 @@ jobs:
 
       # 5️⃣ Build Expo Web
       - name: Build Expo Web
-        run: npx expo export:web
+        run: npx expo export
 
       # 6️⃣ Clean old docs folder & stale web assets
       - name: Clean old docs folder
         run: |
           echo "Cleaning old docs folder..."
           rm -rf docs
-          rm -rf web-export # remove any leftover from previous builds
+          rm -rf _expo/web # remove any leftover from previous builds
 
       # 7️⃣ Copy new build to docs
       - name: Copy build to docs
         run: |
           mkdir -p docs
-          cp -r web-export/* docs/
+          cp -r _expo/web/* docs/
 
       # 8️⃣ Fix absolute paths to relative for GitHub Pages
       - name: Fix paths for GitHub Pages
