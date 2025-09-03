@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -14,17 +14,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Set up Node.js
+      # 2️⃣ Setup Node
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '20'
 
       # 3️⃣ Install dependencies
       - name: Install dependencies
         run: npm install
 
-      # 4️⃣ Preflight: ensure SettingsSheet.tsx exists
+      # 4️⃣ Preflight check: ensure SettingsSheet exists
       - name: Check for SettingsSheet.tsx
         run: |
           echo "Checking components folder..."
@@ -34,30 +34,25 @@ jobs:
             exit 1
           fi
 
-      # 5️⃣ Export web assets only
+      # 5️⃣ Export web build
       - name: Export Expo Web
         run: npx expo export --platform web
 
-      # 6️⃣ Verify export
-      - name: Verify web export
+      # 6️⃣ Check export succeeded
+      - name: Verify _expo/web exists
         run: |
           if [ ! -d "_expo/web" ]; then
             echo "❌ ERROR: _expo/web folder not found. Export may have failed."
-            echo "Contents of _expo (if any):"
-            ls -R _expo || true
             exit 1
           fi
 
       # 7️⃣ Clean old docs folder
       - name: Clean old docs folder
-        run: |
-          rm -rf docs
+        run: rm -rf docs
 
-      # 8️⃣ Copy web export to docs
-      - name: Copy web export to docs
-        run: |
-          mkdir -p docs
-          cp -r _expo/web/* docs/
+      # 8️⃣ Copy web build to docs
+      - name: Copy web build to docs
+        run: cp -r _expo/web docs
 
       # 9️⃣ Fix absolute paths for GitHub Pages
       - name: Fix paths for GitHub Pages
@@ -69,11 +64,11 @@ jobs:
       - name: GitHub Pages SPA fix
         run: cp docs/index.html docs/404.html
 
-      # 1️⃣1️⃣ Commit and push changes
-      - name: Commit and push docs
+      # 1️⃣1️⃣ Commit & push changes to main branch
+      - name: Commit & push docs
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
           git add docs
-          git commit -m "Deploy Expo Web to docs [skip ci]" || echo "No changes to commit"
+          git commit -m "Deploy web build to docs [skip ci]" || echo "No changes to commit"
           git push
