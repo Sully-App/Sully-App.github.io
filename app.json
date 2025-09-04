@@ -29,7 +29,8 @@
     },
     "web": {
       "favicon": "./assets/images/final_quest_240x240.png",
-      "bundler": "metro"
+      "bundler": "metro",
+      "output": "web"
     },
     "plugins": [
       "expo-font",
@@ -41,6 +42,10 @@
     },
     "extra": {
       "router": {}
-    }
+    },
+    "assetBundlePatterns": [
+      "assets/**/*",
+      "public/**/*"
+    ]
   }
 }
