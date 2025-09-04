@@ -55,11 +55,19 @@ jobs:
             echo "❌ ERROR: app.json not found"
             exit 1
           fi
-          echo "Checking public assets..."
-          ls -R public || echo "No public folder"
+          echo "Checking assets..."
+          ls -R assets || echo "No assets folder"
+          if [ -f assets/images/final_quest_240x240.png ]; then
+            echo "Found final_quest_240x240.png"
+          else
+            echo "❌ ERROR: assets/images/final_quest_240x240.png not found"
+            exit 1
+          fi
           echo "Checking components..."
           ls -R components || echo "No components folder"
-          if [ ! -f components/SettingsSheet.tsx ]; then
+          if [ -f components/SettingsSheet.tsx ]; then
+            echo "Found SettingsSheet.tsx"
+          else
             echo "❌ ERROR: components/SettingsSheet.tsx not found"
             exit 1
           fi
@@ -116,11 +124,12 @@ jobs:
       - name: Copy web build to docs
         run: cp -r _expo/web docs
 
-      # 1️⃣2️⃣ Remove ServiceWorker references
-      - name: Remove ServiceWorker references
+      # 1️⃣2️⃣ Fix ServiceWorker and manifest
+      - name: Fix ServiceWorker and manifest
         run: |
-          sed -i 's|navigator.serviceWorker.register("/sw.js")|// ServiceWorker disabled|g' docs/index.html
+          sed -i 's|navigator.serviceWorker.register("/sw.js")|// ServiceWorker disabled|g' docs/index.html || echo "No ServiceWorker in index.html"
           sed -i 's|"serviceWorker":.*$|"serviceWorker": null,|g' docs/_expo/web/manifest.json || echo "No serviceWorker in manifest"
+          sed -i 's|logo192x192.png|final_quest_240x240.png|g' docs/_expo/web/manifest.json || echo "No logo192x192 in manifest"
 
       # 1️⃣3️⃣ Fix absolute paths for GitHub Pages
       - name: Fix paths for GitHub Pages
