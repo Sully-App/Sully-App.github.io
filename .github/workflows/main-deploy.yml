@@ -1,4 +1,4 @@
-name: Deploy Expo Web to GitHub Pages and Build Android/iOS
+name: Deploy Expo Web to GitHub Pages
 
 on:
   push:
@@ -43,50 +43,96 @@ jobs:
           expo-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      # 5️⃣ Preflight check: ensure SettingsSheet exists
-      - name: Check for SettingsSheet.tsx
+      # 5️⃣ Debug: Check key files
+      - name: Check key files
         run: |
-          echo "Checking components folder..."
-          ls -R ./components || true
-          if [ ! -f ./components/SettingsSheet.tsx ]; then
-            echo "❌ ERROR: components/SettingsSheet.tsx not found. Check casing/path."
+          echo "Listing root files..."
+          ls -la
+          echo "Checking app.json..."
+          if [ -f app.json ]; then
+            cat app.json
+          else
+            echo "❌ ERROR: app.json not found"
+            exit 1
+          fi
+          echo "Checking public assets..."
+          ls -R public || echo "No public folder"
+          echo "Checking components..."
+          ls -R components || echo "No components folder"
+          if [ ! -f components/SettingsSheet.tsx ]; then
+            echo "❌ ERROR: components/SettingsSheet.tsx not found"
+            exit 1
+          fi
+          echo "Checking app/(auth)/login.tsx..."
+          if [ -f app/(auth)/login.tsx ]; then
+            echo "Found login.tsx"
+          else
+            echo "❌ ERROR: app/(auth)/login.tsx not found"
             exit 1
           fi
 
-      # 6️⃣ Export web build
+      # 6️⃣ Debug: Check env vars
+      - name: Check environment variables
+        run: |
+          if [ -z "$EXPO_PUBLIC_SUPABASE_URL" ]; then
+            echo "❌ ERROR: EXPO_PUBLIC_SUPABASE_URL is not set"
+            exit 1
+          fi
+          if [ -z "$EXPO_PUBLIC_SUPABASE_ANON_KEY" ]; then
+            echo "❌ ERROR: EXPO_PUBLIC_SUPABASE_ANON_KEY is not set"
+            exit 1
+          fi
+          echo "Env vars are set"
+
+      # 7️⃣ Run lint to catch TypeScript errors
+      - name: Run ESLint
+        run: npm run lint || echo "Lint errors found, continuing..."
+
+      # 8️⃣ Export web build with verbose output
       - name: Export Expo Web
-        run: npm run build:web
+        run: npx expo export -p web --verbose
         env:
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
 
-      # 7️⃣ Check export succeeded
-      - name: Verify _expo/web exists
+      # 9️⃣ Debug: Check build output
+      - name: Check build output
         run: |
-          if [ ! -d "_expo/web" ]; then
-            echo "❌ ERROR: _expo/web folder not found. Export may have failed."
+          echo "Listing directories..."
+          ls -R
+          if [ -d "_expo/web" ]; then
+            echo "Found _expo/web folder"
+            ls -R _expo/web
+          else
+            echo "❌ ERROR: _expo/web folder not found. Export failed."
             exit 1
           fi
 
-      # 8️⃣ Clean old docs folder
+      # 🔟 Clean old docs folder
       - name: Clean old docs folder
         run: rm -rf docs
 
-      # 9️⃣ Copy web build to docs
+      # 1️⃣1️⃣ Copy web build to docs
       - name: Copy web build to docs
         run: cp -r _expo/web docs
 
-      # 🔟 Fix absolute paths for GitHub Pages
+      # 1️⃣2️⃣ Remove ServiceWorker references
+      - name: Remove ServiceWorker references
+        run: |
+          sed -i 's|navigator.serviceWorker.register("/sw.js")|// ServiceWorker disabled|g' docs/index.html
+          sed -i 's|"serviceWorker":.*$|"serviceWorker": null,|g' docs/_expo/web/manifest.json || echo "No serviceWorker in manifest"
+
+      # 1️⃣3️⃣ Fix absolute paths for GitHub Pages
       - name: Fix paths for GitHub Pages
         run: |
           sed -i 's|href="/|href="./|g' docs/index.html
           sed -i 's|src="/|src="./|g' docs/index.html
 
-      # 1️⃣1️⃣ SPA support: copy index.html to 404.html
+      # 1️⃣4️⃣ SPA support: copy index.html to 404.html
       - name: GitHub Pages SPA fix
         run: cp docs/index.html docs/404.html
 
-      # 1️⃣2️⃣ Check for changes in docs
+      # 1️⃣5️⃣ Check for changes in docs
       - name: Check for changes
         id: changes
         run: |
@@ -98,7 +144,7 @@ jobs:
             echo "has_changes=true" >> $GITHUB_OUTPUT
           fi
 
-      # 1️⃣3️⃣ Commit & push changes to main branch
+      # 1️⃣6️⃣ Commit & push changes to main branch
       - name: Commit & push docs
         if: steps.changes.outputs.has_changes == 'true'
         run: |
@@ -106,69 +152,3 @@ jobs:
           git config user.email github-actions@github.com
           git commit -m "Deploy web build to docs [skip ci]"
           git push
-
-  build-android:
-    runs-on: ubuntu-latest
-    needs: build-web
-    if: ${{ github.event_name == 'push' }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
-          fi
-
-      - name: Setup Expo
-        uses: expo/expo-github-action@v8
-        with:
-          expo-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
-
-      - name: Build Android
-        run: npx eas build --platform android --profile production --non-interactive
-        env:
-          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
-          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
-
-  build-ios:
-    runs-on: macos-latest
-    needs: build-web
-    if: ${{ github.event_name == 'push' }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
-          fi
-
-      - name: Setup Expo
-        uses: expo/expo-github-action@v8
-        with:
-          expo-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
-
-      - name: Build iOS
-        run: npx eas build --platform ios --profile production --non-interactive
-        env:
-          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
-          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
