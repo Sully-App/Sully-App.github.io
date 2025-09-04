@@ -23,23 +23,33 @@ jobs:
         with:
           node-version: '20'
 
-      # 3️⃣ Install dependencies with retry
+      # 3️⃣ Install dependencies with fallback
       - name: Install dependencies
         run: |
-          for i in {1..3}; do
-            if npm ci; then
-              echo "Dependencies installed successfully"
-              break
-            else
-              echo "Attempt $i failed, retrying..."
-              if [ $i -eq 3 ]; then
-                echo "❌ ERROR: Failed to install dependencies after 3 attempts"
-                exit 1
+          if [ -f package-lock.json ]; then
+            for i in {1..3}; do
+              if npm ci; then
+                echo "Dependencies installed successfully with package-lock.json"
+                break
+              else
+                echo "Attempt $i failed, checking lockfile..."
+                if [ $i -eq 3 ]; then
+                  echo "❌ ERROR: npm ci failed after 3 attempts. Regenerating lockfile..."
+                  rm -f package-lock.json
+                  npm install --package-lock-only
+                  git add package-lock.json
+                  git commit -m "Regenerate package-lock.json [skip ci]" || echo "No package-lock changes"
+                  git push
+                  if ! npm ci; then
+                    echo "❌ ERROR: Failed to install dependencies after regeneration"
+                    exit 1
+                  fi
+                fi
+                sleep 10
               fi
-              sleep 10
-            fi
-          done
-          if [ ! -f package-lock.json ]; then
+            done
+          else
+            npm install
             npm install --package-lock-only
             git add package-lock.json
             git commit -m "Generate package-lock.json [skip ci]" || echo "No package-lock changes"
