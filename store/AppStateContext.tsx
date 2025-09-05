@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import {
   Account,
@@ -127,7 +126,7 @@ interface Ctx {
   clearAll: () => void;
 }
 
-const AppState = createContext<Ctx>(null as any);
+const AppState = createContext<Ctx | undefined>(undefined);
 
 export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [role, setRoleState] = useState<Role | null>(null);
@@ -171,9 +170,7 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setObjectives(loaded.objectives || []);
       setSafetyRequirements(loaded.safetyRequirements || []);
     })();
-  }, []);
-
-  // Persistence effects
+  }, []);// Persistence effects
   useEffect(() => { saveItems(items); }, [items]);
   useEffect(() => { saveNotifications(notifications); }, [notifications]);
   useEffect(() => { saveRequests(requests); }, [requests]);
@@ -289,9 +286,7 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const updateStock: Ctx['updateStock'] = (id, currentStock) => updateItem(id, { currentStock });
 
-  const deleteItem: Ctx['deleteItem'] = (id) => setItems((prev) => prev.filter((x) => x.id !== id));
-
-  // Restock requests
+  const deleteItem: Ctx['deleteItem'] = (id) => setItems((prev) => prev.filter((x) => x.id !== id));// Restock requests
   const createRequest: Ctx['createRequest'] = ({ itemId, quantity, immediate }) => {
     const req: RestockRequest = {
       id: Math.random().toString(36).slice(2),
@@ -401,6 +396,7 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const until = Date.now() + dur * 60 * 1000;
     updateAccount(currentAccount.id, { status: 'lunch', statusUntil: until });
   };
+
   const endStatus: Ctx['endStatus'] = () => {
     if (!currentAccount) return;
     updateAccount(currentAccount.id, { status: 'on_shift', statusUntil: undefined });
@@ -796,4 +792,8 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   return <AppState.Provider value={ctx}>{children}</AppState.Provider>;
 };
 
-export const useAppState = () => useContext(AppState);
+export const useAppState = () => {
+  const ctx = useContext(AppState);
+  if (!ctx) throw new Error('useAppState must be used within an AppStateProvider');
+  return ctx;
+};
