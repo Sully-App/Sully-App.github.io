@@ -8,13 +8,8 @@
       "type": "image/x-icon"
     },
     {
-      "src": "logo192x192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "logo512x512.png",
-      "sizes": "512x512",
+      "src": "final_quest_240x240.png",
+      "sizes": "240x240",
       "type": "image/png"
     }
   ],
