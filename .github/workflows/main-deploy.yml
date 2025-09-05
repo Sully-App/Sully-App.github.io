@@ -1,183 +1,43 @@
-name: Deploy Expo Web to GitHub Pages
+name: main-deploy
 
 on:
   push:
     branches:
       - main
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  build-web:
+  deploy:
     runs-on: ubuntu-latest
+    environment: production
+    env:
+      EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
     steps:
-      # 1️⃣ Checkout repository
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      # 2️⃣ Setup Node
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '18.x'
 
-      # 3️⃣ Install dependencies with fallback
       - name: Install dependencies
-        run: |
-          if [ -f package-lock.json ]; then
-            for i in {1..3}; do
-              if npm ci; then
-                echo "Dependencies installed successfully with package-lock.json"
-                break
-              else
-                echo "Attempt $i failed, checking lockfile..."
-                if [ $i -eq 3 ]; then
-                  echo "❌ ERROR: npm ci failed after 3 attempts. Regenerating lockfile..."
-                  rm -f package-lock.json
-                  npm install --package-lock-only
-                  git add package-lock.json
-                  git commit -m "Regenerate package-lock.json [skip ci]" || echo "No package-lock changes"
-                  git push
-                  if ! npm ci; then
-                    echo "❌ ERROR: Failed to install dependencies after regeneration"
-                    exit 1
-                  fi
-                fi
-                sleep 10
-              fi
-            done
-          else
-            npm install
-            npm install --package-lock-only
-            git add package-lock.json
-            git commit -m "Generate package-lock.json [skip ci]" || echo "No package-lock changes"
-            git push
-          fi
+        run: npm install
 
-      # 4️⃣ Setup Expo
-      - name: Setup Expo
-        uses: expo/expo-github-action@v8
+      - name: Install Expo CLI
+        run: npm install -g expo-cli
+
+      - name: Export web build
+        run: expo export -p web
+
+      - name: Configure build
+        run: |
+          mkdir -p docs
+          cp -r web-build/* docs/
+          sed -i 's|navigator.serviceWorker.register("/sw.js")|// ServiceWorker disabled|g' docs/index.html
+          sed -i 's|logo192x192.png|final_quest_240x240.png|g' docs/manifest.json
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
         with:
-          expo-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
-
-      # 5️⃣ Debug: Check key files
-      - name: Check key files
-        run: |
-          echo "Listing root files..."
-          ls -la
-          echo "Checking app.json..."
-          if [ -f app.json ]; then
-            cat app.json
-          else
-            echo "❌ ERROR: app.json not found"
-            exit 1
-          fi
-          echo "Checking assets..."
-          ls -R assets || echo "No assets folder"
-          if [ -f "assets/images/final_quest_240x240.png" ]; then
-            echo "Found final_quest_240x240.png"
-          else
-            echo "❌ ERROR: assets/images/final_quest_240x240.png not found"
-            exit 1
-          fi
-          echo "Checking components..."
-          ls -R components || echo "No components folder"
-          if [ -f components/SettingsSheet.tsx ]; then
-            echo "Found SettingsSheet.tsx"
-          else
-            echo "❌ ERROR: components/SettingsSheet.tsx not found"
-            exit 1
-          fi
-          echo "Checking app/(auth)/login.tsx..."
-          if [ -f "app/(auth)/login.tsx" ]; then
-            echo "Found login.tsx"
-          else
-            echo "❌ ERROR: app/(auth)/login.tsx not found"
-            exit 1
-          fi
-
-      # 6️⃣ Debug: Check env vars
-      - name: Check environment variables
-        run: |
-          if [ -z "$EXPO_PUBLIC_SUPABASE_URL" ]; then
-            echo "❌ ERROR: EXPO_PUBLIC_SUPABASE_URL is not set"
-            exit 1
-          fi
-          if [ -z "$EXPO_PUBLIC_SUPABASE_ANON_KEY" ]; then
-            echo "❌ ERROR: EXPO_PUBLIC_SUPABASE_ANON_KEY is not set"
-            exit 1
-          fi
-          echo "Env vars are set"
-
-      # 7️⃣ Run lint to catch TypeScript errors
-      - name: Run ESLint
-        run: npm run lint || { echo "Lint errors found, attempting to fix..."; npx eslint . --fix || exit 1; }
-
-      # 8️⃣ Export web build with verbose output
-      - name: Export Expo Web
-        run: npx expo export -p web --verbose
-        env:
-          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
-          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
-
-      # 9️⃣ Debug: Check build output
-      - name: Check build output
-        run: |
-          echo "Listing directories..."
-          ls -R
-          if [ -d "_expo/web" ]; then
-            echo "Found _expo/web folder"
-            ls -R _expo/web
-          else
-            echo "❌ ERROR: _expo/web folder not found. Export failed."
-            exit 1
-          fi
-
-      # 🔟 Clean old docs folder
-      - name: Clean old docs folder
-        run: rm -rf docs
-
-      # 1️⃣1️⃣ Copy web build to docs
-      - name: Copy web build to docs
-        run: cp -r _expo/web docs
-
-      # 1️⃣2️⃣ Fix ServiceWorker and manifest
-      - name: Fix ServiceWorker and manifest
-        run: |
-          sed -i 's|navigator.serviceWorker.register("/sw.js")|// ServiceWorker disabled|g' docs/index.html || echo "No ServiceWorker in index.html"
-          sed -i 's|"serviceWorker":.*$|"serviceWorker": null,|g' docs/_expo/web/manifest.json || echo "No serviceWorker in manifest"
-          sed -i 's|logo192x192.png|final_quest_240x240.png|g' docs/_expo/web/manifest.json || echo "No logo192x192 in manifest"
-
-      # 1️⃣3️⃣ Fix absolute paths for GitHub Pages
-      - name: Fix paths for GitHub Pages
-        run: |
-          sed -i 's|href="/|href="./|g' docs/index.html
-          sed -i 's|src="/|src="./|g' docs/index.html
-
-      # 1️⃣4️⃣ SPA support: copy index.html to 404.html
-      - name: GitHub Pages SPA fix
-        run: cp docs/index.html docs/404.html
-
-      # 1️⃣5️⃣ Check for changes in docs
-      - name: Check for changes
-        id: changes
-        run: |
-          git add docs
-          if git diff --cached --quiet; then
-            echo "No changes in docs"
-            echo "has_changes=false" >> $GITHUB_OUTPUT
-          else
-            echo "has_changes=true" >> $GITHUB_OUTPUT
-          fi
-
-      # 1️⃣6️⃣ Commit & push changes to main branch
-      - name: Commit & push docs
-        if: steps.changes.outputs.has_changes == 'true'
-        run: |
-          git config user.name github-actions
-          git config user.email github-actions@github.com
-          git commit -m "Deploy web build to docs [skip ci]"
-          git push
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
