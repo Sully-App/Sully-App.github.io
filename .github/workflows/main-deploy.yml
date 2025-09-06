@@ -1,4 +1,4 @@
-name: main-deploy
+name: Deploy Web App to GitHub Pages
 
 on:
   push:
@@ -8,36 +8,32 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: production
-    env:
-      EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
-      EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
-      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: '18.x'
+          node-version: 18.x
 
-      - name: Install dependencies
-        run: npm install
-
-      - name: Install Expo CLI
-        run: npm install -g expo-cli
-
-      - name: Export web build
-        run: expo export -p web
-
-      - name: Configure build
+      - name: Install Expo CLI and dependencies
         run: |
-          mkdir -p docs
-          cp -r web-build/* docs/
-          sed -i 's|navigator.serviceWorker.register("/sw.js")|// ServiceWorker disabled|g' docs/index.html
-          sed -i 's|logo192x192.png|final_quest_240x240.png|g' docs/manifest.json
+          npm install -g expo-cli
+          npm install
+
+      - name: Build and export web app
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+        run: |
+          # Use the command from your package.json to ensure correctness.
+          npm run build:web
+          cp -r dist/* docs/
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs
+          keep_files: true
