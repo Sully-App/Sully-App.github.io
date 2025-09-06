@@ -35,7 +35,7 @@
 
       // Skip PWA installation and service worker code if we're in development mode (index.ts.bundle exists)
       // or if we're in Expo development environment
-      if (!document.querySelector('script[src*="index.ts.bundle"]') && !window.location.href.includes('exp.direct') && !window.location.href.includes('scf.usercontent.goog')) {
+      if (!document.querySelector('script[src*="index.ts.bundle"]') && !window.location.href.includes('exp.direct')) {
 
         window.handleInstallClick = async () => {
           console.debug("handleInstallClick called");
@@ -72,60 +72,56 @@
         window.addEventListener('beforeinstallprompt', window.handleBeforeInstallPrompt);
 
         if ('serviceWorker' in navigator) {
-          try {
-            // Unregister any existing service worker first
-            const existingRegistration = await navigator.serviceWorker.getRegistration();
-            if (existingRegistration) {
-              console.log('Unregistering existing service worker');
-              await existingRegistration.unregister();
-            }
-
-            const registration = await navigator.serviceWorker.register('./sw.js');
-            console.log('Service Worker registered with scope:', registration.scope);
-
-            // Check for updates every 30 seconds
-            setInterval(async () => {
-              try {
-                await registration.update();
-              } catch (error) {
-                console.error('Error checking for updates:', error);
-              }
-            }, 200);
-
-            // Listen for updates
-            registration.addEventListener('updatefound', () => {
-              console.log('Service Worker update found');
-              if (registration.installing) {
-                registration.installing.addEventListener('statechange', () => {
-                  if (registration.waiting) {
-                    // Automatically activate the new service worker
-                    registration.waiting.postMessage('SKIP_WAITING');
-                  }
-                });
-              }
-            });
-
-            // // Listen for controller change to refresh the page
-            // navigator.serviceWorker.addEventListener('controllerchange', () => {
-            //   console.log('New service worker activated, refreshing page');
-            //   window.location.reload();
-            // });
-
-            navigator.serviceWorker.addEventListener('activate', function(event) {
-              console.log('Service Worker activated');
-              event.waitUntil(
-                caches.keys().then((cacheNames) => {
-                  return Promise.all(
-                    cacheNames.map((cacheName) => {
-                      return caches.delete(cacheName);
-                    })
-                  );
-                })
-              );
-            });
-          } catch (error) {
-            console.error('Service Worker registration failed:', error);
+          // Unregister any existing service worker first
+          const existingRegistration = await navigator.serviceWorker.getRegistration();
+          if (existingRegistration) {
+            console.log('Unregistering existing service worker');
+            await existingRegistration.unregister();
           }
+
+          const registration = await navigator.serviceWorker.register('./sw.js');
+          console.log('Service Worker registered with scope:', registration.scope);
+
+          // Check for updates every 30 seconds
+          setInterval(async () => {
+            try {
+              await registration.update();
+            } catch (error) {
+              console.error('Error checking for updates:', error);
+            }
+          }, 200);
+
+          // Listen for updates
+          registration.addEventListener('updatefound', () => {
+            console.log('Service Worker update found');
+            if (registration.installing) {
+              registration.installing.addEventListener('statechange', () => {
+                if (registration.waiting) {
+                  // Automatically activate the new service worker
+                  registration.waiting.postMessage('SKIP_WAITING');
+                }
+              });
+            }
+          });
+
+          // // Listen for controller change to refresh the page
+          // navigator.serviceWorker.addEventListener('controllerchange', () => {
+          //   console.log('New service worker activated, refreshing page');
+          //   window.location.reload();
+          // });
+
+          navigator.serviceWorker.addEventListener('activate', function(event) {
+            console.log('Service Worker activated');
+            event.waitUntil(
+              caches.keys().then((cacheNames) => {
+                return Promise.all(
+                  cacheNames.map((cacheName) => {
+                    return caches.delete(cacheName);
+                  })
+                );
+              })
+            );
+          });
         }
       }
     });
@@ -139,6 +135,6 @@
     </noscript>
     <!-- The root element for your Expo app. -->
     <div id="root"></div>
-  <script src="/_expo/static/js/web/index-7423019a4d89a38f0167be7f57330b23.js" defer></script>
+  <script src="/_expo/static/js/web/index-033d31652cc3462369eb6ca72b09141f.js" defer></script>
 </body>
 </html>
