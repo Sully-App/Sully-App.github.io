@@ -1,10 +1,9 @@
-
 import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
 
 export const colors = {
   // Sullivan Tire inspired palette
-  primary: '#007A33',     // Sullivan green
-  secondary: '#FFD100',   // Sullivan yellow
+  primary: '#007A33',      // Sullivan green
+  secondary: '#FFD100',    // Sullivan yellow
   accent: '#005F27',      // Darker green for accents
   background: '#FFFFFF',  // Light background
   backgroundAlt: '#F7F7F9', // Subtle alt background
@@ -12,8 +11,8 @@ export const colors = {
   grey: '#6B7280',        // Gray-500
   card: '#F3F4F6',        // Gray-100
   danger: '#DC2626',      // Red-600
-  warning: '#F59E0B',     // Amber-500
-  success: '#059669',     // Emerald-600
+  warning: '#F59E0B',      // Amber-500
+  success: '#059669',      // Emerald-600
 };
 
 export const buttonStyles = StyleSheet.create({
