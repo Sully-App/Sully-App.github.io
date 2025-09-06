@@ -1,39 +1,50 @@
-name: Deploy Web App to GitHub Pages
+name: Build and Deploy Expo Web App
 
 on:
-  push:
-    branches:
-      - main
+push:
+branches:
+- main
+paths:
+- 'app/'
+- 'components/'
+- 'utils/'
+- 'styles/'
+- 'store/**'
+- 'package.json'
+- 'yarn.lock'
+pull_request:
+branches:
+- main
 
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+build_and_deploy:
+runs-on: ubuntu-latest
+env:
+EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+steps:
+- name: Checkout repository
+uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18.x
+  - name: Set up Node.js
+    uses: actions/setup-node@v4
+    with:
+      node-version: 20.x
 
-      - name: Install Expo CLI and dependencies
-        run: |
-          npm install -g expo-cli
-          npm install
+  - name: Install dependencies
+    run: yarn install --frozen-lockfile
 
-      - name: Build and export web app
-        env:
-          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
-          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
-        run: |
-          # Use the command from your package.json to ensure correctness.
-          npm run build:web
-          cp -r dist/* docs/
+  - name: Build Expo web app
+    run: npx expo export --platform web --output-dir dist
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs
-          keep_files: true
+  - name: Create .nojekyll file
+    run: touch dist/.nojekyll
+
+  - name: Deploy to GitHub Pages
+    uses: JamesIves/github-pages-deploy-action@v4
+    with:
+      branch: gh-pages
+      folder: dist
+      clean: true
+      clean_exclude: |
+        .nojekyll
