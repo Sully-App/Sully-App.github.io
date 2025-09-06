@@ -1,4 +1,3 @@
-
 import { Link, Tabs } from 'expo-router';
 import { colors } from '../../styles/commonStyles';
 import { Ionicons } from '@expo/vector-icons';
