@@ -1,51 +1,32 @@
 {
   "expo": {
-    "name": "Sully-App",
-    "slug": "Sully-App",
+    "name": "Natively",
+    "slug": "Natively",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/natively-dark.png",
+    "icon": "./assets/images/logo192x192.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/natively-dark.png",
+      "image": "./assets/images/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#FFFFFF"
+      "backgroundColor": "#ffffff"
     },
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": ["**/*"],
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.Natively",
-      "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
-      }
+      "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/natively-dark.png",
+        "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
-      },
-      "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.Natively"
+      }
     },
     "web": {
-      "favicon": "./assets/images/final_quest_240x240.png",
-      "bundler": "metro",
-      "output": "web"
-    },
-    "plugins": [
-      "expo-font",
-      "expo-router"
-    ],
-    "scheme": "sullivaninventory",
-    "experiments": {
-      "typedRoutes": true
-    },
-    "extra": {
-      "router": {}
-    },
-    "assetBundlePatterns": [
-      "assets/**/*",
-      "public/**/*"
-    ]
+      "favicon": "./assets/images/favicon.ico",
+      "output": "static"
+    }
   }
 }
